@@ -1,6 +1,46 @@
+[workspace]
+members = [
+    "src/crates/infrastructure",
+    "src/crates/domain",
+    "src/crates/usecase",
+    "src/crates/main",
+]
 [package]
 name = "server"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# axum.workspace = true
+# sqlx.workspace = true
+tokio.workspace = true
+# dotenv.workspace = true
+# serde.workspace = true
+
+# infrastructure = { path = "./src/crates/infrastructure" }
+# domain = { path = "./src/crates/domain" }
+# usecase = { path = "./src/crates/usecase" }
+main = { path = "./src/crates/main" }
+
+[workspace.dependencies]
+axum = { version = "0.8.1", features = ["macros"] }
+sqlx = { version = "0.8.3", features = ['postgres', "uuid", "runtime-tokio-native-tls"] }
+uuid = { version ="1.16.0", features = ["v4"] }
+tokio = { version = "1.44.1", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+dotenv = "0.15.0"
+chrono = { version = "0.4.40", features = ["serde"] }
+async-trait = "0.1.88"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = [
+    "std",
+    "env-filter",
+    "fmt",
+] }
+anyhow ="1.0.97"
+tower = { version = "0.5.2", features = ["util"] }
+mockall = "0.13.1"
+openidconnect = "4.0.0"
+
+[dev-dependencies]
+# tower.workspace = true
