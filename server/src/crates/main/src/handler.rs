@@ -3,6 +3,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use domain::entity::value_object::user_id::UserId;
 use serde::Deserialize;
 use std::env;
 use usecase::create_user::{CreateUserInput, CreateUserOutput, CreateUserUsecase};
@@ -23,14 +24,17 @@ impl std::convert::From<CreateUserRequestBody> for CreateUserInput {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct CreateUserResponseBody {
-    pub circle_id: String,
-    pub owner_id: String,
+    pub id: String,
+    pub name: String,
+    pub email: String,
 }
 
 impl std::convert::From<CreateUserOutput> for CreateUserResponseBody {
     fn from(create_user_output: CreateUserOutput) -> Self {
         CreateUserResponseBody {
-            ..create_user_output.into()
+            id: create_user_output.id.0.to_string(),
+            name: create_user_output.name,
+            email: create_user_output.email,
         }
     }
 }
@@ -39,10 +43,10 @@ pub(crate) async fn handle_create_user(
     State(state): State<AppState>,
     Json(body): Json<CreateUserRequestBody>,
 ) -> Result<Json<CreateUserResponseBody>, String> {
-    let circle_circle_input = CreateUserInput::from(body);
+    let create_user_input = CreateUserInput::from(body);
     let mut usecase = CreateUserUsecase::new(state.user_repository);
     usecase
-        .execute(circle_circle_input)
+        .execute(create_user_input)
         .await
         .map(CreateUserResponseBody::from)
         .map(Json)

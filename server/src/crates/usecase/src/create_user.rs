@@ -32,9 +32,9 @@ where
 
     pub async fn execute(
         &mut self,
-        create_circle_input: CreateUserInput,
+        create_user_input: CreateUserInput,
     ) -> anyhow::Result<CreateUserOutput> {
-        let user = User::new(create_circle_input.name, create_circle_input.email);
+        let user = User::new(create_user_input.name, create_user_input.email);
         self.user_repository
             .create(&user)
             .await

@@ -1,15 +1,13 @@
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[repr(transparent)]
 
 pub struct UserId(pub Uuid);
 
 impl UserId {
     pub fn new() -> Self {
-        let uuid = Uuid::new_v4();
-        let user_id = UserId::from(uuid);
-        user_id.into()
+        UserId(Uuid::new_v4())
     }
 }
 

@@ -1,6 +1,7 @@
 use domain::entity::{user::User, value_object::user_id::UserId};
 use uuid::Uuid;
 
+#[derive(Debug, sqlx::FromRow)]
 pub struct UserModel {
     pub id: Uuid,
     pub name: String,

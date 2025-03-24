@@ -1,6 +1,6 @@
-use domain::interface::user_repository_interface::UserRepositoryInterface;
-use domain::entity::user::User;
 use crate::model::user_model::UserModel;
+use domain::entity::user::User;
+use domain::interface::user_repository_interface::UserRepositoryInterface;
 
 #[derive(Debug, Clone)]
 pub struct UserRepositoryWithPg {
@@ -15,27 +15,27 @@ impl UserRepositoryWithPg {
 
 #[async_trait::async_trait]
 impl UserRepositoryInterface for UserRepositoryWithPg {
-    async fn create(&self, user: &User) -> Result<(), anyhow::Error> {
+    async fn create(&self, user: &User) -> Result<User, anyhow::Error> {
         tracing::info!("create_user: {:?}", user);
         let user_model = UserModel::try_from(user.clone())?;
-        sqlx::query(
+        let row = sqlx::query_as!(
+            UserModel,
             r#"
-        insert into
-            user (id, name, email)
-        values
-            (?, ?, ?)
-      "#,
+            INSERT INTO "user" (id, name, email)
+            VALUES ($1, $2, $3)
+            RETURNING id, name, email
+            "#,
+            user_model.id,
+            user_model.name,
+            user_model.email
         )
-        .bind(user_model.id)
-        .bind(user_model.name)
-        .bind(user_model.email)
-        .execute(&self.db)
+        .fetch_one(&self.db)
         .await
         .map_err(|e| {
             eprintln!("Failed to insert user: {:?}", e);
             anyhow::Error::msg("Failed to insert user")
         })?;
 
-        Ok(())
+        Ok(User::try_from(row)?)
     }
 }
