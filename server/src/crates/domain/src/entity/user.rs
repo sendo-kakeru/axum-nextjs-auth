@@ -15,9 +15,14 @@ impl User {
     }
 }
 
-#[test]
-fn user_instantiate_test() {
-    let user = User::new("Taro".into(), "taro@example.com".into());
-    assert_eq!(user.name, "Taro");
-    assert_eq!(user.email, "taro@example.com");
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn user_instantiate_test() {
+        let user = User::new("Taro".into(), "taro@example.com".into());
+        assert_eq!(user.name, "Taro");
+        assert_eq!(user.email, "taro@example.com");
+    }
 }
