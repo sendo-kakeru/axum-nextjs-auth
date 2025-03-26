@@ -38,7 +38,7 @@ mod tests {
     use axum::http::{StatusCode, header::CONTENT_TYPE};
     use tower::ServiceExt;
 
-    use crate::handler::CreateUserResponseBody;
+    use crate::handler::{CreateUserRequestBody, CreateUserResponseBody};
 
     use super::*;
 
@@ -70,8 +70,7 @@ mod tests {
                     .uri("/api/users")
                     .header(CONTENT_TYPE, "application/json")
                     .body(axum::body::Body::new(serde_json::to_string(
-                        &CreateUserResponseBody {
-                            id: "c39d66b4-24cf-4b1b-ac95-f9e797fcf73c".to_string(),
+                        &CreateUserRequestBody {
                             name: "Test User".to_string(),
                             email: "test@example.com".to_string(),
                         },
@@ -82,6 +81,9 @@ mod tests {
         let response_body = serde_json::from_slice::<'_, CreateUserResponseBody>(
             &axum::body::to_bytes(response.into_body(), usize::MAX).await?,
         )?;
+        assert_eq!(response_body.name, "Test User");
+        assert_eq!(response_body.email, "test@example.com");
+        assert!(!response_body.id.is_empty());
         Ok(())
 
         // @todo 取得ができたら検証テスト追加

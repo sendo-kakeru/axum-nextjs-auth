@@ -45,14 +45,13 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use mockall::predicate;
     use domain::{
         entity::value_object::user_id::UserId,
         interface::user_repository_interface::MockUserRepositoryInterface,
     };
 
     #[tokio::test]
-    async fn test_create_user_usecase_successful() {
+    async fn test_create_user_usecase_successful() -> anyhow::Result<()> {
         let mut mocked_user_repository = MockUserRepositoryInterface::new();
 
         let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
@@ -61,12 +60,27 @@ mod tests {
             name: input.name.clone(),
             email: input.email.clone(),
         };
+
+        // クロージャ用に clone しておく（ムーブしても OK）
+        let expected_name_for_match = expected_user.name.clone();
+        let expected_email_for_match = expected_user.email.clone();
+
         let expected_name = expected_user.name.clone();
         let expected_email = expected_user.email.clone();
 
         mocked_user_repository
             .expect_create()
-            .withf(move |user| user.name == expected_name && user.email == expected_email)
+            .withf(move |user| {
+                user.name == expected_name_for_match && user.email == expected_email_for_match
+            })
             .returning(move |_user| Ok(expected_user.clone()));
+
+        let mut usecase = CreateUserUsecase::new(mocked_user_repository);
+        let result = usecase.execute(input).await.unwrap();
+
+        assert_eq!(&result.name, &expected_name);
+        assert_eq!(&result.email, &expected_email);
+
+        anyhow::Ok(())
     }
 }

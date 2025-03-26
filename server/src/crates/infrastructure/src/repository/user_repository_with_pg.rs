@@ -1,7 +1,6 @@
 use crate::model::user_model::UserModel;
 use domain::entity::user::User;
 use domain::interface::user_repository_interface::UserRepositoryInterface;
-// use main:
 
 #[derive(Debug, Clone)]
 pub struct UserRepositoryWithPg {
@@ -62,11 +61,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test() {
+    async fn test_create_user_successfully() {
         let pool = connect().await.expect("database should connect");
         let user_repository = UserRepositoryWithPg::new(pool.clone());
         let user = User::new("Test User".into(), "test@example.com".into());
-        let created_user = user_repository.create(&user).await.unwrap();
+        let created_user = user_repository
+            .create(&user)
+            .await
+            .expect("should successfully create user");
 
         assert_eq!(created_user.name, user.name);
         assert_eq!(created_user.email, user.email);
