@@ -65,7 +65,7 @@ mod tests {
     async fn test() {
         let pool = connect().await.expect("database should connect");
         let user_repository = UserRepositoryWithPg::new(pool.clone());
-        let user = User::new("テストユーザー".into(), "test@example.com".into());
+        let user = User::new("Test User".into(), "test@example.com".into());
         let created_user = user_repository.create(&user).await.unwrap();
 
         assert_eq!(created_user.name, user.name);

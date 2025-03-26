@@ -1,10 +1,6 @@
-use axum::{
-    Router,
-    routing::{get, post, put},
-};
-use infrastructure::repository::user_repository_with_pg::UserRepositoryWithPg;
-
 use crate::{config::connect, handler::handle_create_user};
+use axum::{Router, routing::get};
+use infrastructure::repository::user_repository_with_pg::UserRepositoryWithPg;
 
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -34,4 +30,60 @@ pub async fn run() -> Result<(), ()> {
     println!("Listening on: {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Ok;
+    use axum::http::{StatusCode, header::CONTENT_TYPE};
+    use tower::ServiceExt;
+
+    use crate::handler::CreateUserResponseBody;
+
+    use super::*;
+
+    async fn connect() -> anyhow::Result<sqlx::PgPool, anyhow::Error> {
+        dotenv::dotenv().ok();
+
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(5)
+            .connect(&database_url)
+            .await?;
+
+        Ok(pool)
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_create_user() -> anyhow::Result<()> {
+        let pool = connect().await.expect("database should connect");
+        let state = AppState {
+            user_repository: UserRepositoryWithPg::new(pool.clone()),
+        };
+
+        let app = router().with_state(state);
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/api/users")
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(axum::body::Body::new(serde_json::to_string(
+                        &CreateUserResponseBody {
+                            id: "c39d66b4-24cf-4b1b-ac95-f9e797fcf73c".to_string(),
+                            name: "Test User".to_string(),
+                            email: "test@example.com".to_string(),
+                        },
+                    )?))?,
+            )
+            .await?;
+        assert_eq!(response.status(), StatusCode::OK);
+        let response_body = serde_json::from_slice::<'_, CreateUserResponseBody>(
+            &axum::body::to_bytes(response.into_body(), usize::MAX).await?,
+        )?;
+        Ok(())
+
+        // @todo 取得ができたら検証テスト追加
+    }
 }
