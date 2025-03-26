@@ -41,3 +41,32 @@ where
             .map(|_| CreateUserOutput { ..user })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // use mockall::predicate;
+    use domain::{
+        entity::value_object::user_id::UserId,
+        interface::user_repository_interface::MockUserRepositoryInterface,
+    };
+
+    #[tokio::test]
+    async fn test_create_user_usecase_successful() {
+        let mut mocked_user_repository = MockUserRepositoryInterface::new();
+
+        let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
+        let expected_user = User {
+            id: UserId::new(),
+            name: input.name.clone(),
+            email: input.email.clone(),
+        };
+        let expected_name = expected_user.name.clone();
+        let expected_email = expected_user.email.clone();
+
+        mocked_user_repository
+            .expect_create()
+            .withf(move |user| user.name == expected_name && user.email == expected_email)
+            .returning(move |_user| Ok(expected_user.clone()));
+    }
+}
