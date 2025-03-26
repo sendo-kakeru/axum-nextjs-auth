@@ -10,4 +10,8 @@ tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 anyhow.workspace = true
+dotenv.workspace = true
 domain = { path = "../domain" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }

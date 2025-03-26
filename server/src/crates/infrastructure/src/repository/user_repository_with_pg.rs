@@ -39,3 +39,38 @@ impl UserRepositoryInterface for UserRepositoryWithPg {
         Ok(User::try_from(row)?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use domain::{
+        entity::user::User, interface::user_repository_interface::UserRepositoryInterface,
+    };
+
+    use super::UserRepositoryWithPg;
+
+    async fn connect() -> Result<sqlx::PgPool, sqlx::Error> {
+        dotenv::dotenv().ok();
+
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(5)
+            .connect(&database_url)
+            .await?;
+
+        Ok(pool)
+    }
+
+    #[tokio::test]
+    async fn test_create_user_successfully() {
+        let pool = connect().await.expect("database should connect");
+        let user_repository = UserRepositoryWithPg::new(pool.clone());
+        let user = User::new("Test User".into(), "test@example.com".into());
+        let created_user = user_repository
+            .create(&user)
+            .await
+            .expect("should successfully create user");
+
+        assert_eq!(created_user.name, user.name);
+        assert_eq!(created_user.email, user.email);
+    }
+}

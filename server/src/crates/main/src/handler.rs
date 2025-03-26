@@ -1,11 +1,4 @@
-use axum::{
-    extract::{Json, Path, State},
-    http::StatusCode,
-    response::IntoResponse,
-};
-use domain::entity::value_object::user_id::UserId;
-use serde::Deserialize;
-use std::env;
+use axum::extract::{Json, State};
 use usecase::create_user::{CreateUserInput, CreateUserOutput, CreateUserUsecase};
 
 use crate::app::AppState;
