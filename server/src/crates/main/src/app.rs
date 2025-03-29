@@ -9,7 +9,7 @@ pub(crate) struct AppState {
 
 fn router() -> Router<AppState> {
     Router::new().route("/", get(|| async { "Home" })).route(
-        "/api/users",
+        "/users",
         get(|| async { "Home" }).post(handle_create_user),
     )
 }
@@ -67,7 +67,7 @@ mod tests {
             .oneshot(
                 axum::http::Request::builder()
                     .method("POST")
-                    .uri("/api/users")
+                    .uri("/users")
                     .header(CONTENT_TYPE, "application/json")
                     .body(axum::body::Body::new(serde_json::to_string(
                         &CreateUserRequestBody {
