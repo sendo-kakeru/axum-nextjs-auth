@@ -21,8 +21,8 @@ mod tests {
 
     #[test]
     fn user_instantiate_test() {
-        let user = User::new("Taro".into(), "taro@example.com".into());
-        assert_eq!(user.name, "Taro");
-        assert_eq!(user.email, "taro@example.com");
+        let user = User::new("Test User".into(), "test@example.com".into());
+        assert_eq!(user.name, "Test User");
+        assert_eq!(user.email, "test@example.com");
     }
 }

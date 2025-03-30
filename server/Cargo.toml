@@ -2,8 +2,8 @@
 members = [
     "src/crates/infrastructure",
     "src/crates/domain",
-    "src/crates/usecase",
-    "src/crates/main",
+    "src/crates/application",
+    "src/crates/main", "src/crates/application",
 ]
 [package]
 name = "server"

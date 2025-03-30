@@ -1,7 +1,8 @@
 use domain::{
     entity::user::User,
     interface::{
-        user_email_duplicate_validator_interface::UserEmailDuplicateValidatorInterface, user_repository_interface::UserRepositoryInterface
+        user_email_duplicate_validator_interface::UserEmailDuplicateValidatorInterface,
+        user_repository_interface::UserRepositoryInterface,
     },
 };
 use serde::Deserialize;
@@ -62,7 +63,8 @@ mod tests {
     use domain::{
         entity::value_object::user_id::UserId,
         interface::{
-            user_email_duplicate_validator_interface::MockUserEmailDuplicateValidatorInterface, user_repository_interface::MockUserRepositoryInterface
+            user_email_duplicate_validator_interface::MockUserEmailDuplicateValidatorInterface,
+            user_repository_interface::MockUserRepositoryInterface,
         },
     };
 
@@ -70,7 +72,8 @@ mod tests {
     async fn test_create_user_usecase_successful() -> anyhow::Result<()> {
         let mut mocked_user_repository = MockUserRepositoryInterface::new();
         // @todo テストdbの用意ができたらメアド重複テスト追加
-        let mut mocked_user_email_duplicate_validator = MockUserEmailDuplicateValidatorInterface::new();
+        let mut mocked_user_email_duplicate_validator =
+            MockUserEmailDuplicateValidatorInterface::new();
 
         let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
         let expected_user = User {
@@ -78,6 +81,11 @@ mod tests {
             name: input.name.clone(),
             email: input.email.clone(),
         };
+
+        mocked_user_email_duplicate_validator
+            .expect_validate_user_email_duplicate()
+            .withf(|email| email == "test@example.com")
+            .returning(|_email| Ok(()));
 
         let expected_name_for_match = expected_user.name.clone();
         let expected_email_for_match = expected_user.email.clone();
@@ -92,8 +100,10 @@ mod tests {
             })
             .returning(move |_user| Ok(expected_user.clone()));
 
-        let mut usecase =
-            CreateUserUsecase::new(mocked_user_repository, mocked_user_email_duplicate_validator);
+        let mut usecase = CreateUserUsecase::new(
+            mocked_user_repository,
+            mocked_user_email_duplicate_validator,
+        );
         let result = usecase.execute(input).await.unwrap();
 
         assert_eq!(&result.name, &expected_name);
@@ -102,3 +112,4 @@ mod tests {
         anyhow::Ok(())
     }
 }
+// @todo 失敗時のテスト

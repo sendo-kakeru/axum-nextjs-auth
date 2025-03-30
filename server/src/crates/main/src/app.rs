@@ -39,10 +39,11 @@ pub async fn run() -> Result<(), ()> {
 #[cfg(test)]
 mod tests {
     use anyhow::Ok;
+    use application::request_response::{
+        create_user_request::CreateUserRequestBody, create_user_response::CreateUserResponseBody,
+    };
     use axum::http::{StatusCode, header::CONTENT_TYPE};
     use tower::ServiceExt;
-
-    use crate::handler::{CreateUserRequestBody, CreateUserResponseBody};
 
     use super::*;
 
