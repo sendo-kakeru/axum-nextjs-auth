@@ -22,7 +22,7 @@ impl UserEmailDuplicateValidatorInterface for UserEmailDuplicateValidatorWithPg 
                 .await?;
 
         if is_exist {
-            return Err(anyhow::anyhow!("email '{}' is already registered", email));
+            return Err(anyhow::anyhow!("email is already registered"));
         }
 
         Ok(())

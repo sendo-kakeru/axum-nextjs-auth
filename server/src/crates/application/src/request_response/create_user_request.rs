@@ -7,7 +7,7 @@ pub struct CreateUserRequestBody {
     #[validate(length(
         min = 2,
         max = 50,
-        message = "Name must be between 3 and 50 characters"
+        message = "Name must be between 2 and 50 characters"
     ))]
     pub name: String,
     #[validate(email)]
