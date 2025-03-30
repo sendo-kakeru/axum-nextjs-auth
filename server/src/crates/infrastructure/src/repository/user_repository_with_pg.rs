@@ -9,7 +9,7 @@ pub struct UserRepositoryWithPg {
 
 impl UserRepositoryWithPg {
     pub fn new(db: sqlx::PgPool) -> Self {
-        Self { db: db }
+        Self { db }
     }
 }
 
