@@ -1,1 +1,2 @@
 pub mod user_repository_interface;
+pub mod user_email_duplicate_validator_interface;

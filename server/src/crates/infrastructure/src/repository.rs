@@ -1,1 +1,2 @@
 pub mod user_repository_with_pg;
+pub mod user_email_duplicate_validator_with_pg;
