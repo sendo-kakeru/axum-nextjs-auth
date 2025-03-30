@@ -1,17 +1,20 @@
 use crate::{config::connect, handler::handle_create_user};
 use axum::{Router, routing::get};
-use infrastructure::repository::user_repository_with_pg::UserRepositoryWithPg;
+use infrastructure::repository::{
+    user_email_duplicate_validator_with_pg::UserEmailDuplicateValidatorWithPg,
+    user_repository_with_pg::UserRepositoryWithPg,
+};
 
 #[derive(Clone)]
 pub(crate) struct AppState {
     pub(crate) user_repository: UserRepositoryWithPg,
+    pub(crate) user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg,
 }
 
 fn router() -> Router<AppState> {
-    Router::new().route("/", get(|| async { "Home" })).route(
-        "/users",
-        get(|| async { "Home" }).post(handle_create_user),
-    )
+    Router::new()
+        .route("/", get(|| async { "Home" }))
+        .route("/users", get(|| async { "Home" }).post(handle_create_user))
 }
 
 pub async fn run() -> Result<(), ()> {
@@ -20,6 +23,7 @@ pub async fn run() -> Result<(), ()> {
     let pool = connect::connect().await.expect("database should connect");
     let state = AppState {
         user_repository: UserRepositoryWithPg::new(pool.clone()),
+        user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
     };
 
     let app = router().with_state(state);
@@ -60,6 +64,7 @@ mod tests {
         let pool = connect().await.expect("database should connect");
         let state = AppState {
             user_repository: UserRepositoryWithPg::new(pool.clone()),
+            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
         };
 
         let app = router().with_state(state);

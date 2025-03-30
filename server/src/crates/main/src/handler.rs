@@ -1,7 +1,7 @@
 use crate::app::AppState;
 use axum::extract::{Json, State};
-use usecase::create_user::{CreateUserInput, CreateUserOutput, CreateUserUsecase};
 use axum_valid::Valid;
+use usecase::create_user::{CreateUserInput, CreateUserOutput, CreateUserUsecase};
 use validator::Validate;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, Validate)]
@@ -45,7 +45,8 @@ pub(crate) async fn handle_create_user(
 ) -> Result<Json<CreateUserResponseBody>, String> {
     let body = json.0;
     let create_user_input = CreateUserInput::from(body);
-    let mut usecase = CreateUserUsecase::new(state.user_repository);
+    let mut usecase =
+        CreateUserUsecase::new(state.user_repository, state.user_email_duplicate_validator);
     usecase
         .execute(create_user_input)
         .await
