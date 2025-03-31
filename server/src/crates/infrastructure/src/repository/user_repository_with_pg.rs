@@ -62,9 +62,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_user_successfully() {
+        let email = format!("test+{}@example.com", uuid::Uuid::new_v4());
         let pool = connect().await.expect("database should connect");
         let user_repository = UserRepositoryWithPg::new(pool.clone());
-        let user = User::new("Test User".into(), "test@example.com".into());
+        let user = User::new("Test User".into(), email.into());
         let created_user = user_repository
             .create(&user)
             .await
