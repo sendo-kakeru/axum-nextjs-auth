@@ -69,6 +69,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "uuid",
  "validator",
 ]
 
@@ -950,6 +951,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "validator",
 ]
 

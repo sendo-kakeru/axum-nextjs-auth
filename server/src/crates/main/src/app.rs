@@ -49,7 +49,7 @@ mod tests {
     async fn connect() -> anyhow::Result<sqlx::PgPool, anyhow::Error> {
         dotenv::dotenv().ok();
 
-        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let database_url = std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
@@ -59,8 +59,8 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn test_create_user() -> anyhow::Result<()> {
+        let email = format!("test+{}@example.com", uuid::Uuid::new_v4());
         let pool = connect().await.expect("database should connect");
         let state = AppState {
             user_repository: UserRepositoryWithPg::new(pool.clone()),
@@ -77,7 +77,7 @@ mod tests {
                     .body(axum::body::Body::new(serde_json::to_string(
                         &CreateUserRequestBody {
                             name: "Test User".to_string(),
-                            email: "test@example.com".to_string(),
+                            email: email.clone().to_string(),
                         },
                     )?))?,
             )
@@ -87,7 +87,7 @@ mod tests {
             &axum::body::to_bytes(response.into_body(), usize::MAX).await?,
         )?;
         assert_eq!(response_body.name, "Test User");
-        assert_eq!(response_body.email, "test@example.com");
+        assert_eq!(response_body.email, email.clone());
         assert!(!response_body.id.is_empty());
         Ok(())
 

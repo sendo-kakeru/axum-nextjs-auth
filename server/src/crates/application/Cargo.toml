@@ -11,3 +11,6 @@ axum-valid.workspace = true
 validator.workspace = true
 serde_json.workspace = true
 domain = { path = "../domain" }
+
+[dev-dependencies]
+uuid.workspace = true

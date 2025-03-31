@@ -20,3 +20,6 @@ dotenv.workspace = true
 serde_json.workspace = true
 axum-valid.workspace = true
 validator.workspace = true
+
+[dev-dependencies]
+uuid.workspace = true
