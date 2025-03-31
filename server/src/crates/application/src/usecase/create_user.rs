@@ -71,7 +71,6 @@ mod tests {
     #[tokio::test]
     async fn test_create_user_usecase_successful() -> anyhow::Result<()> {
         let mut mocked_user_repository = MockUserRepositoryInterface::new();
-        // @todo テストdbの用意ができたらメアド重複テスト追加
         let mut mocked_user_email_duplicate_validator =
             MockUserEmailDuplicateValidatorInterface::new();
 
@@ -111,5 +110,24 @@ mod tests {
 
         anyhow::Ok(())
     }
+
+    #[tokio::test]
+    async fn test_create_user_duplicate_email_fails() {
+        let mocked_repo = MockUserRepositoryInterface::new();
+        let mut mocked_validator = MockUserEmailDuplicateValidatorInterface::new();
+
+        mocked_validator
+            .expect_validate_user_email_duplicate()
+            .returning(|_email| Err(anyhow::anyhow!("email is already registered")));
+
+        let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
+        let mut usecase = CreateUserUsecase::new(mocked_repo, mocked_validator);
+        let result = usecase.execute(input).await;
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "email is already registered"
+        );
+    }
 }
-// @todo 失敗時のテスト

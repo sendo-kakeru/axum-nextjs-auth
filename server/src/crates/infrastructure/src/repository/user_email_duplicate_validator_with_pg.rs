@@ -28,39 +28,48 @@ impl UserEmailDuplicateValidatorInterface for UserEmailDuplicateValidatorWithPg 
         Ok(())
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::repository::user_repository_with_pg::UserRepositoryWithPg;
+    use domain::entity::user::User;
+    use domain::interface::user_repository_interface::UserRepositoryInterface;
 
-// @todo テスト用DBを作成したらテスト追加
-// #[cfg(test)]
-// mod tests {
-//     use domain::{
-//         entity::user::User, interface::user_repository_interface::UserRepositoryInterface,
-//     };
+    async fn connect() -> Result<sqlx::PgPool, sqlx::Error> {
+        dotenv::dotenv().ok();
 
-//     use super::UserRepositoryWithPg;
+        let database_url =
+            std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+        sqlx::postgres::PgPoolOptions::new()
+            .max_connections(5)
+            .connect(&database_url)
+            .await
+    }
 
-//     async fn connect() -> Result<sqlx::PgPool, sqlx::Error> {
-//         dotenv::dotenv().ok();
+    #[tokio::test]
+    async fn test_validate_returns_ok_for_new_email() {
+        let pool = connect().await.unwrap();
+        let validator = UserEmailDuplicateValidatorWithPg::new(pool);
+        let new_email = format!("unique+{}@example.com", uuid::Uuid::new_v4());
+        let result = validator.validate_user_email_duplicate(&new_email).await;
 
-//         let database_url = std::env::var("TEST_DATABASE_URL").expect("DATABASE_URL must be set");
-//         let pool = sqlx::postgres::PgPoolOptions::new()
-//             .max_connections(5)
-//             .connect(&database_url)
-//             .await?;
+        assert!(result.is_ok());
+    }
 
-//         Ok(pool)
-//     }
+    #[tokio::test]
+    async fn test_validate_returns_err_for_existing_email() {
+        let pool = connect().await.unwrap();
+        let email = format!("test+{}@example.com", uuid::Uuid::new_v4());
+        let user = User::new("Test User".into(), email.clone());
+        let user_repo = UserRepositoryWithPg::new(pool.clone());
+        user_repo.create(&user).await.expect("should insert user");
+        let validator = UserEmailDuplicateValidatorWithPg::new(pool);
+        let result = validator.validate_user_email_duplicate(&email).await;
 
-//     #[tokio::test]
-//     async fn test_create_user_successfully() {
-//         let pool = connect().await.expect("database should connect");
-//         let user_repository = UserRepositoryWithPg::new(pool.clone());
-//         let user = User::new("Test User".into(), "test@example.com".into());
-//         let created_user = user_repository
-//             .create(&user)
-//             .await
-//             .expect("should successfully create user");
-
-//         assert_eq!(created_user.name, user.name);
-//         assert_eq!(created_user.email, user.email);
-//     }
-// }
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "email is already registered"
+        );
+    }
+}
