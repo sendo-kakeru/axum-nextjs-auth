@@ -1,37 +1,9 @@
-# https://taskfile.dev
-
 version: '3'
 
 tasks:
-
-  test:
-    desc: Run tests
-    dir: server
-    cmds:
-      - task: reset-db
-      - cargo nextest run --workspace
-
-  migrate:
-    desc: Run database migrations
-    dir: server
-    cmds:
-      - cargo sqlx migrate run
-
-  drop-db:
-    desc: Drop all tables (reset public schema)
-    cmds:
-      - docker-compose exec -T postgres psql -U local -d local -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-
-  reset-db:
-    desc: Reset the database and run migrations
-    cmds:
-      - task: drop-db
-      - task: migrate
-
-  psql:
-    desc: Connect to the PostgreSQL container via bash
-    cmds:
-      - docker-compose exec postgres bash
+  # ------------------------
+  # DEVELOPMENT
+  # ------------------------
 
   dev:
     desc: Start the development server
@@ -48,3 +20,64 @@ tasks:
       - docker-compose build --no-cache
       - docker-compose up -d
       - task: migrate
+      - task: migrate-test-db
+
+  # ------------------------
+  # MAIN DB
+  # ------------------------
+
+  drop-db:
+    desc: Drop all tables from dev DB
+    cmds:
+      - docker-compose exec -T postgres psql -U local -d local -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+  migrate:
+    desc: Run dev database migrations
+    dir: server
+    cmds:
+      - cargo sqlx migrate run
+
+  reset-db:
+    desc: Reset dev database and run migrations
+    cmds:
+      - task: drop-db
+      - task: migrate
+
+  psql:
+    desc: Connect to the main PostgreSQL container via bash
+    cmds:
+      - docker-compose exec postgres bash
+
+  # ------------------------
+  # TEST DB
+  # ------------------------
+
+  drop-test-db:
+    desc: Drop all tables from test DB
+    cmds:
+      - docker-compose exec -T test-postgres psql -U test -d test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+  migrate-test-db:
+    desc: Run migrations on test DB
+    dir: server
+    env:
+      DATABASE_URL: postgres://test:test@localhost:5434/test
+    cmds:
+      - cargo sqlx migrate run
+
+  reset-test-db:
+    desc: Reset test DB and run migrations
+    cmds:
+      - task: drop-test-db
+      - task: migrate-test-db
+
+  # ------------------------
+  # TEST
+  # ------------------------
+
+  test:
+    desc: Run tests on test DB
+    deps: [reset-test-db]
+    dir: server
+    cmds:
+      - cargo nextest run --workspace
