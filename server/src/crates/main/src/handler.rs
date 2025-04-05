@@ -51,10 +51,10 @@ pub(crate) async fn handle_create_user(
             if let Some(UserEmailDuplicateValidationError::AlreadyExists(validation_error)) =
                 e.downcast_ref::<UserEmailDuplicateValidationError>()
             {
-                let problem = problemdetails::new(StatusCode::BAD_REQUEST)
-                    .with_title("Validation Error")
+                let problem = problemdetails::new(StatusCode::CONFLICT)
+                    .with_title("Duplicate Email")
                     .with_type("https://example.com/problems/validation")
-                    .with_detail("Value was not appropriate")
+                    .with_detail("This email address is already in use")
                     .with_instance("/users")
                     .with_value(
                         "email",
