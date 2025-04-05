@@ -19,6 +19,7 @@ dotenv.workspace = true
 serde_json.workspace = true
 validator.workspace = true
 problemdetails.workspace = true
+async-trait.workspace = true
 
 [dev-dependencies]
 uuid.workspace = true

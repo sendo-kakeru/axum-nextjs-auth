@@ -1,9 +1,18 @@
-use crate::{config::connect, handler::handle_create_user};
-use axum::{Router, http::StatusCode, routing::get};
+use crate::{
+    config::connect,
+    handler::{handle_create_user, handle_not_found},
+};
+use axum::{
+    Router,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::get,
+};
 use infrastructure::repository::{
     user_email_duplicate_validator_with_pg::UserEmailDuplicateValidatorWithPg,
     user_repository_with_pg::UserRepositoryWithPg,
 };
+use tower::ServiceBuilder;
 
 #[derive(Clone)]
 pub(crate) struct AppState {
@@ -15,6 +24,66 @@ fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { "Home" }))
         .route("/users", get(|| async { "Home" }).post(handle_create_user))
+        .layer(ServiceBuilder::new().layer(axum::middleware::map_response(
+            |response: Response| async {
+                match response.status() {
+                    StatusCode::UNPROCESSABLE_ENTITY => {
+                        return (
+                            StatusCode::UNPROCESSABLE_ENTITY,
+                            problemdetails::new(StatusCode::UNPROCESSABLE_ENTITY)
+                                .with_title("Invalid JSON")
+                                .with_type("https://example.com/problems/invalid-json")
+                                .with_detail("Required fields are missing or invalid")
+                                .with_instance("/users"),
+                        )
+                            .into_response();
+                    }
+                    StatusCode::METHOD_NOT_ALLOWED => {
+                        return (problemdetails::new(StatusCode::METHOD_NOT_ALLOWED)
+                            .with_title("Method Not Allowed")
+                            .with_type("https://example.com/problems/method-not-allowed"))
+                        .into_response();
+                    }
+                    StatusCode::BAD_REQUEST => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            problemdetails::new(StatusCode::BAD_REQUEST)
+                                .with_title("Bad Request")
+                                .with_type("https://example.com/problems/bad-request")
+                                .with_detail("Malformed query or path parameter"),
+                        )
+                            .into_response();
+                    }
+                    StatusCode::UNSUPPORTED_MEDIA_TYPE => {
+                        return (
+                            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                            problemdetails::new(StatusCode::UNSUPPORTED_MEDIA_TYPE)
+                                .with_title("Unsupported Media Type")
+                                .with_type("https://example.com/problems/unsupported-media-type")
+                                .with_detail("Content-Type must be application/json"),
+                        )
+                            .into_response();
+                    }
+                    status if !status.is_success() => {
+                        return problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
+                            .with_title("Unexpected Error")
+                            .with_type("https://example.com/problems/internal-server-error")
+                            .with_detail(format!("Unhandled status: {}", status))
+                            .into_response();
+                    }
+                    _ => response,
+                }
+            },
+        )))
+        .layer(
+            problemdetails::axum::PanicHandlerBuilder::new()
+                .with_problem(
+                    problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
+                        .with_title("Internal Server Error"),
+                )
+                .build(),
+        )
+        .fallback(handle_not_found)
 }
 
 pub async fn run() -> Result<(), ()> {
@@ -26,14 +95,7 @@ pub async fn run() -> Result<(), ()> {
         user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
     };
 
-    let app = router().with_state(state).layer(
-        problemdetails::axum::PanicHandlerBuilder::new()
-            .with_problem(
-                problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
-                    .with_title("Internal Server Error"),
-            )
-            .build(),
-    );
+    let app = router().with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await

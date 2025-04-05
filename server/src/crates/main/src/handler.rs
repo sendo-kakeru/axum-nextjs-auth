@@ -7,7 +7,7 @@ use application::{
 };
 use axum::{
     extract::{Json, State},
-    http::StatusCode,
+    http::{self, StatusCode},
     response::IntoResponse,
 };
 use domain::error::user_error::UserEmailDuplicateValidationError;
@@ -61,10 +61,20 @@ pub(crate) async fn handle_create_user(
             } else {
                 let problem = problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
                     .with_title("Internal Server Error")
-                    .with_instance("/users")
-                    .with_detail(e.to_string());
+                    .with_instance("/users");
+
+                #[cfg(debug_assertions)]
+                let problem = problem.with_detail(e.to_string());
                 Err(problem)
             }
         }
     }
+}
+
+pub async fn handle_not_found(_req: http::Request<axum::body::Body>) -> impl IntoResponse {
+    let problem = problemdetails::new(StatusCode::NOT_FOUND)
+        .with_title("Not Found")
+        .with_type("https://example.com/problems/not-found")
+        .with_detail("The requested resource was not found.");
+    problem
 }
