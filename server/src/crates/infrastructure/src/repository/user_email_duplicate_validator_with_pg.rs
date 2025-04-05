@@ -72,9 +72,9 @@ mod tests {
         let result = validator.validate_user_email_duplicate(&email).await;
 
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "User email already exists"
-        );
+        match result.unwrap_err() {
+            UserEmailDuplicateValidationError::AlreadyExists => {}
+            e => panic!("unexpected error variant: {:?}", e),
+        }
     }
 }

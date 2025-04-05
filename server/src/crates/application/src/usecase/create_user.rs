@@ -126,9 +126,12 @@ mod tests {
         let result = usecase.execute(input).await;
 
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "User email already exists"
-        );
+        match result
+            .unwrap_err()
+            .downcast_ref::<UserEmailDuplicateValidationError>()
+        {
+            Some(UserEmailDuplicateValidationError::AlreadyExists) => {}
+            other => panic!("unexpected error: {:?}", other),
+        }
     }
 }
