@@ -119,13 +119,7 @@ mod tests {
 
         mocked_validator
             .expect_validate_user_email_duplicate()
-            .returning(|_email| {
-                let mut validation_error = validator::ValidationError::new("already_exists");
-                validation_error.message = Some("email is already registered".into());
-                Err(UserEmailDuplicateValidationError::AlreadyExists(
-                    validation_error,
-                ))
-            });
+            .returning(|_email| Err(UserEmailDuplicateValidationError::AlreadyExists));
 
         let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
         let mut usecase = CreateUserUsecase::new(mocked_repo, mocked_validator);

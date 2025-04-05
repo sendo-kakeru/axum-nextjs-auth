@@ -27,9 +27,7 @@ impl UserEmailDuplicateValidatorInterface for UserEmailDuplicateValidatorWithPg 
                 .await?;
 
         if is_exist {
-            let mut err = validator::ValidationError::new("already_exists");
-            err.message = Some("Email is already registered".into());
-            return Err(UserEmailDuplicateValidationError::AlreadyExists(err));
+            return Err(UserEmailDuplicateValidationError::AlreadyExists);
         }
 
         Ok(())
