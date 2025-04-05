@@ -62,6 +62,7 @@ mod tests {
     use super::*;
     use domain::{
         entity::value_object::user_id::UserId,
+        error::user_error::UserEmailDuplicateValidationError,
         interface::{
             user_email_duplicate_validator_interface::MockUserEmailDuplicateValidatorInterface,
             user_repository_interface::MockUserRepositoryInterface,
@@ -118,7 +119,13 @@ mod tests {
 
         mocked_validator
             .expect_validate_user_email_duplicate()
-            .returning(|_email| Err(anyhow::anyhow!("email is already registered")));
+            .returning(|_email| {
+                let mut validation_error = validator::ValidationError::new("already_exists");
+                validation_error.message = Some("email is already registered".into());
+                Err(UserEmailDuplicateValidationError::AlreadyExists(
+                    validation_error,
+                ))
+            });
 
         let input = CreateUserInput::new("Test User".into(), "test@example.com".into());
         let mut usecase = CreateUserUsecase::new(mocked_repo, mocked_validator);
@@ -127,7 +134,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "email is already registered"
+            "User email already exists error: email is already registered"
         );
     }
 }

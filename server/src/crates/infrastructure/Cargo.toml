@@ -11,6 +11,9 @@ uuid.workspace = true
 chrono.workspace = true
 anyhow.workspace = true
 dotenv.workspace = true
+problemdetails.workspace = true
+axum.workspace = true
+validator.workspace = true
 domain = { path = "../domain" }
 
 [dev-dependencies]

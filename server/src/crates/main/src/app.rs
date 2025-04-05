@@ -1,5 +1,5 @@
 use crate::{config::connect, handler::handle_create_user};
-use axum::{Router, routing::get};
+use axum::{Router, http::StatusCode, routing::get};
 use infrastructure::repository::{
     user_email_duplicate_validator_with_pg::UserEmailDuplicateValidatorWithPg,
     user_repository_with_pg::UserRepositoryWithPg,
@@ -26,7 +26,14 @@ pub async fn run() -> Result<(), ()> {
         user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
     };
 
-    let app = router().with_state(state);
+    let app = router().with_state(state).layer(
+        problemdetails::axum::PanicHandlerBuilder::new()
+            .with_problem(
+                problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
+                    .with_title("Internal Server Error"),
+            )
+            .build(),
+    );
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
@@ -49,7 +56,8 @@ mod tests {
     async fn connect() -> anyhow::Result<sqlx::PgPool, anyhow::Error> {
         dotenv::dotenv().ok();
 
-        let database_url = std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+        let database_url =
+            std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
@@ -82,7 +90,7 @@ mod tests {
                     )?))?,
             )
             .await?;
-        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::CREATED);
         let response_body = serde_json::from_slice::<'_, CreateUserResponseBody>(
             &axum::body::to_bytes(response.into_body(), usize::MAX).await?,
         )?;
