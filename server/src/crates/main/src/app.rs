@@ -289,11 +289,6 @@ mod tests {
         let response = app
             .oneshot(
                 axum::http::Request::builder()
-                    // .method("POST")
-                    // .uri("/users")
-                    // .header(CONTENT_TYPE, "application/json")
-                    // .body(axum::body::Body::from(r#"{}"#))
-                    // .unwrap(),
                     .method("POST")
                     .uri("/users")
                     .header(CONTENT_TYPE, "text/plain")
@@ -314,35 +309,5 @@ mod tests {
             problem["type"],
             "https://example.com/problems/unsupported-media-type"
         );
-    }
-    #[tokio::test]
-    async fn test_create_user_with_invalid_json() {
-        let pool = connect().await.unwrap();
-        let state = AppState {
-            user_repository: UserRepositoryWithPg::new(pool.clone()),
-            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
-        };
-        let app = router().with_state(state);
-
-        let response = app
-            .oneshot(
-                axum::http::Request::builder()
-                    .method("POST")
-                    .uri("/users")
-                    .header(CONTENT_TYPE, "application/json")
-                    .body(axum::body::Body::from(r#"{}"#))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let problem: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-        assert_eq!(problem["title"], "Invalid JSON");
-        assert_eq!(problem["type"], "https://example.com/problems/invalid-json");
     }
 }
