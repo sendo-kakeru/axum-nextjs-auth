@@ -1,5 +1,7 @@
-use anyhow::Ok;
-use domain::interface::user_email_duplicate_validator_interface::UserEmailDuplicateValidatorInterface;
+use domain::{
+    error::user_error::UserEmailDuplicateValidationError,
+    interface::user_email_duplicate_validator_interface::UserEmailDuplicateValidatorInterface,
+};
 
 #[derive(Debug, Clone)]
 pub struct UserEmailDuplicateValidatorWithPg {
@@ -14,7 +16,10 @@ impl UserEmailDuplicateValidatorWithPg {
 
 #[async_trait::async_trait]
 impl UserEmailDuplicateValidatorInterface for UserEmailDuplicateValidatorWithPg {
-    async fn validate_user_email_duplicate(&self, email: &str) -> Result<(), anyhow::Error> {
+    async fn validate_user_email_duplicate(
+        &self,
+        email: &str,
+    ) -> Result<(), UserEmailDuplicateValidationError> {
         let is_exist: bool =
             sqlx::query_scalar(r#"SELECT EXISTS(SELECT 1 FROM "user" WHERE email = $1)"#)
                 .bind(email)
@@ -22,7 +27,7 @@ impl UserEmailDuplicateValidatorInterface for UserEmailDuplicateValidatorWithPg 
                 .await?;
 
         if is_exist {
-            return Err(anyhow::anyhow!("email is already registered"));
+            return Err(UserEmailDuplicateValidationError::AlreadyExists);
         }
 
         Ok(())
@@ -67,9 +72,9 @@ mod tests {
         let result = validator.validate_user_email_duplicate(&email).await;
 
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "email is already registered"
-        );
+        match result.unwrap_err() {
+            UserEmailDuplicateValidationError::AlreadyExists => {}
+            e => panic!("unexpected error variant: {:?}", e),
+        }
     }
 }

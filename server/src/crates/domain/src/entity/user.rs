@@ -9,7 +9,6 @@ pub struct User {
 
 impl User {
     pub fn new(name: String, email: String) -> Self {
-        // pub fn new(name: String, email: String) -> Result<Self, anyhow::Error> {
         let id = UserId::new();
         User { id, name, email }
     }

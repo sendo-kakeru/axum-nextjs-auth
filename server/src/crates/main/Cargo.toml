@@ -8,7 +8,6 @@ domain = { path = "../domain" }
 application = { path = "../application" }
 infrastructure = { path = "../infrastructure" }
 serde.workspace = true
-# serde_json.workspace = true
 axum.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
@@ -18,8 +17,9 @@ anyhow.workspace = true
 sqlx.workspace = true
 dotenv.workspace = true
 serde_json.workspace = true
-axum-valid.workspace = true
 validator.workspace = true
+problemdetails.workspace = true
+async-trait.workspace = true
 
 [dev-dependencies]
 uuid.workspace = true
