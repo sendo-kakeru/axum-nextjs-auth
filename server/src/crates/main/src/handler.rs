@@ -18,11 +18,11 @@ pub(crate) async fn handle_create_user(
     axum::Json(body): Json<CreateUserRequestBody>,
 ) -> Result<impl IntoResponse, problemdetails::Problem> {
     if let Err(validation_errors) = body.validate() {
-        // @todo: instance追加
         let mut problem = problemdetails::new(StatusCode::BAD_REQUEST)
             .with_title("Validation Error")
             .with_type("https://example.com/problems/validation")
-            .with_detail("Value was not appropriate");
+            .with_detail("Value was not appropriate")
+            .with_instance("/users");
 
         for (field, errors) in validation_errors.field_errors() {
             let messages: Vec<String> = errors
@@ -55,6 +55,7 @@ pub(crate) async fn handle_create_user(
                     .with_title("Validation Error")
                     .with_type("https://example.com/problems/validation")
                     .with_detail("Value was not appropriate")
+                    .with_instance("/users")
                     .with_value(
                         "email",
                         validation_error
@@ -68,6 +69,7 @@ pub(crate) async fn handle_create_user(
             } else {
                 let problem = problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
                     .with_title("Internal Server Error")
+                    .with_instance("/users")
                     .with_detail(e.to_string());
                 Err(problem)
             }
