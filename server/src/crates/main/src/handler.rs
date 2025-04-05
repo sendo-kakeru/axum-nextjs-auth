@@ -21,7 +21,7 @@ pub(crate) async fn handle_create_user(
         let mut problem = problemdetails::new(StatusCode::BAD_REQUEST)
             .with_title("Validation Error")
             .with_type("https://example.com/problems/validation")
-            .with_detail("Value was not appropriate")
+            .with_detail("One or more validation rules failed for the provided input")
             .with_instance("/users");
 
         for (field, errors) in validation_errors.field_errors() {

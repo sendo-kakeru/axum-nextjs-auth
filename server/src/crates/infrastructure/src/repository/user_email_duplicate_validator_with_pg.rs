@@ -74,7 +74,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "User email already exists error: Email is already registered"
+            "User email already exists"
         );
     }
 }
