@@ -52,7 +52,7 @@ pub(crate) async fn handle_create_user(
                 e.downcast_ref::<UserEmailDuplicateValidationError>()
             {
                 let problem = problemdetails::new(StatusCode::CONFLICT)
-                    .with_title("Duplicate Email")
+                    .with_title("Duplicate User Email")
                     .with_type("https://example.com/problems/duplicate-email")
                     .with_detail("This email address is already in use")
                     .with_instance("/users");
