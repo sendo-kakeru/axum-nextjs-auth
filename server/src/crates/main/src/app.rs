@@ -64,6 +64,20 @@ fn router() -> Router<AppState> {
                         )
                             .into_response();
                     }
+                    StatusCode::UNAUTHORIZED => {
+                        return problemdetails::new(StatusCode::UNAUTHORIZED)
+                            .with_title("Unauthorized")
+                            .with_type("https://example.com/problems/unauthorized")
+                            .with_detail("Authentication is required to access this resource")
+                            .into_response();
+                    }
+                    StatusCode::FORBIDDEN => {
+                        return problemdetails::new(StatusCode::FORBIDDEN)
+                            .with_title("Forbidden")
+                            .with_type("https://example.com/problems/forbidden")
+                            .with_detail("You don't have permission to access this resource")
+                            .into_response();
+                    }
                     status if !status.is_success() => {
                         return problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
                             .with_title("Unexpected Error")
