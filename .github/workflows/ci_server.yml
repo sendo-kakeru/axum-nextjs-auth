@@ -1,4 +1,4 @@
-name: Rust
+name: Server CI
 on:
   push:
     branches: [main]
@@ -8,7 +8,7 @@ on:
       - "README.md"
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     defaults:
       run:
