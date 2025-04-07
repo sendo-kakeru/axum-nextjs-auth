@@ -9,7 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: front
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,10 +20,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
+          cache-dependency-path: front/package-lock.json
 
       - name: Install dependencies
-        run: npm run ci
+        run: npm ci
 
       - name: Run Lint
         run: npm run lint
