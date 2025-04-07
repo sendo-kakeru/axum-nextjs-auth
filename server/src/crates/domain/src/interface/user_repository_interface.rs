@@ -4,4 +4,5 @@ use crate::entity::user::User;
 #[async_trait::async_trait]
 pub trait UserRepositoryInterface {
     async fn create(&self, user: &User) -> Result<User, anyhow::Error>;
+    async fn find_all(&self) -> Result<Vec<User>, anyhow::Error>;
 }

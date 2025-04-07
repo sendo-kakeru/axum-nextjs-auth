@@ -2,8 +2,12 @@ use crate::app::AppState;
 use application::{
     request_response::{
         create_user_request::CreateUserRequestBody, create_user_response::CreateUserResponseBody,
+        find_all_user_response::FindAllUserResponseBody,
     },
-    usecase::create_user::{CreateUserInput, CreateUserUsecase},
+    usecase::{
+        create_user::{CreateUserInput, CreateUserUsecase},
+        find_all_user::FindAllUserUsecase,
+    },
 };
 use axum::{
     extract::{Json, State},
@@ -65,10 +69,31 @@ pub(crate) async fn handle_create_user(
 
                 #[cfg(debug_assertions)]
                 let problem = problem.with_detail(e.to_string());
+
                 Err(problem)
             }
         }
     }
+}
+
+pub(crate) async fn handle_find_all_user(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, problemdetails::Problem> {
+    let usecase = FindAllUserUsecase::new(state.user_repository);
+
+    let output = usecase.execute().await.map_err(|e| {
+        let problem = problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
+            .with_title("Internal Server Error")
+            .with_instance("/users");
+
+        #[cfg(debug_assertions)]
+        let problem = problem.with_detail(e.to_string());
+
+        problem
+    })?;
+    let response_body = FindAllUserResponseBody::from(output);
+
+    Ok((StatusCode::OK, Json(response_body)))
 }
 
 pub async fn handle_not_found(_req: http::Request<axum::body::Body>) -> impl IntoResponse {

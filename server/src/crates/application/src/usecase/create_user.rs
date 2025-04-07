@@ -50,10 +50,8 @@ where
         self.user_email_duplicate_validator
             .validate_user_email_duplicate(&user.email)
             .await?;
-        self.user_repository
-            .create(&user)
-            .await
-            .map(|_| CreateUserOutput { ..user })
+        let creates_user = self.user_repository.create(&user).await?; // ← 実際に保存された結果
+        anyhow::Ok(creates_user)
     }
 }
 

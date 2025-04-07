@@ -1,3 +1,5 @@
+use std::fmt;
+
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -20,5 +22,11 @@ impl From<Uuid> for UserId {
 impl From<UserId> for Uuid {
     fn from(user_id: UserId) -> Self {
         user_id.0
+    }
+}
+
+impl fmt::Display for UserId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

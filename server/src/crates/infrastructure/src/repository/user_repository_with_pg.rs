@@ -38,6 +38,30 @@ impl UserRepositoryInterface for UserRepositoryWithPg {
 
         Ok(User::try_from(row)?)
     }
+
+    async fn find_all(&self) -> Result<Vec<User>, anyhow::Error> {
+        let rows = sqlx::query_as!(
+            UserModel,
+            r#"
+            SELECT id, name, email FROM "user"
+            ORDER BY name ASC
+            "#
+        )
+        .fetch_all(&self.db)
+        .await
+        .map_err(|e| {
+            eprintln!("Failed to fetch users: {:?}", e);
+            anyhow::Error::msg("Failed to fetch users")
+        })?;
+
+        rows.into_iter()
+            .map(User::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| {
+                eprintln!("Failed to convert UserModel to User: {:?}", e);
+                anyhow::Error::msg("Data conversion failed")
+            })
+    }
 }
 
 #[cfg(test)]
@@ -51,7 +75,8 @@ mod tests {
     async fn connect() -> Result<sqlx::PgPool, sqlx::Error> {
         dotenv::dotenv().ok();
 
-        let database_url = std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
+        let database_url =
+            std::env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set");
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
@@ -73,5 +98,39 @@ mod tests {
 
         assert_eq!(created_user.name, user.name);
         assert_eq!(created_user.email, user.email);
+    }
+
+    #[tokio::test]
+    async fn test_find_all_users_successfully() {
+        let pool = connect().await.expect("database should connect");
+        let user_repository = UserRepositoryWithPg::new(pool.clone());
+
+        let email1 = format!("user1+{}@example.com", uuid::Uuid::new_v4());
+        let user1 = User::new("User One".into(), email1.clone());
+        user_repository
+            .create(&user1)
+            .await
+            .expect("should create user 1");
+
+        let email2 = format!("user2+{}@example.com", uuid::Uuid::new_v4());
+        let user2 = User::new("User Two".into(), email2.clone());
+        user_repository
+            .create(&user2)
+            .await
+            .expect("should create user 2");
+
+        let users = user_repository
+            .find_all()
+            .await
+            .expect("should fetch all users");
+
+        assert!(
+            users.iter().any(|u| u.email == email1),
+            "User 1 should exist"
+        );
+        assert!(
+            users.iter().any(|u| u.email == email2),
+            "User 2 should exist"
+        );
     }
 }
