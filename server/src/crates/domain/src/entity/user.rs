@@ -1,6 +1,6 @@
 use super::value_object::user_id::UserId;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct User {
     pub id: UserId,
     pub name: String,

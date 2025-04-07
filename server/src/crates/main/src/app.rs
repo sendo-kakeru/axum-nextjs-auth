@@ -1,6 +1,6 @@
 use crate::{
     config::connect,
-    handler::{handle_create_user, handle_not_found},
+    handler::{handle_create_user, handle_find_all_user, handle_not_found},
 };
 use axum::{
     Router,
@@ -23,7 +23,7 @@ pub(crate) struct AppState {
 fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { "Home" }))
-        .route("/users", get(|| async { "Home" }).post(handle_create_user))
+        .route("/users", get(handle_find_all_user).post(handle_create_user))
         .layer(ServiceBuilder::new().layer(axum::middleware::map_response(
             |response: Response| async move {
                 if let Some(content_type) = response.headers().get(axum::http::header::CONTENT_TYPE)
@@ -143,6 +143,7 @@ mod tests {
         };
 
         let app = router().with_state(state);
+
         let response = app
             .oneshot(
                 axum::http::Request::builder()
@@ -157,7 +158,9 @@ mod tests {
                     )?))?,
             )
             .await?;
+
         assert_eq!(response.status(), StatusCode::CREATED);
+
         let response_body = serde_json::from_slice::<'_, CreateUserResponseBody>(
             &axum::body::to_bytes(response.into_body(), usize::MAX).await?,
         )?;
@@ -167,6 +170,85 @@ mod tests {
         Ok(())
 
         // @todo 取得ができたら検証テスト追加
+    }
+
+    #[tokio::test]
+    async fn test_find_all_users() -> anyhow::Result<()> {
+        let pool = connect().await?;
+        let state = AppState {
+            user_repository: UserRepositoryWithPg::new(pool.clone()),
+            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
+        };
+
+        let app = router().with_state(state);
+
+        let users_to_create = vec![
+            (
+                "Test User1",
+                format!("user{}@example.com", uuid::Uuid::new_v4()),
+            ),
+            (
+                "Test User2",
+                format!("user{}@example.com", uuid::Uuid::new_v4()),
+            ),
+            (
+                "Test User3",
+                format!("user{}@example.com", uuid::Uuid::new_v4()),
+            ),
+        ];
+
+        for (name, email) in &users_to_create {
+            let request_body = CreateUserRequestBody {
+                name: name.to_string(),
+                email: email.to_string(),
+            };
+            let response = app
+                .clone()
+                .oneshot(
+                    axum::http::Request::builder()
+                        .method("POST")
+                        .uri("/users")
+                        .header(CONTENT_TYPE, "application/json")
+                        .body(axum::body::Body::from(serde_json::to_string(
+                            &request_body,
+                        )?))?,
+                )
+                .await?;
+
+            assert_eq!(
+                response.status(),
+                StatusCode::CREATED,
+                "Failed to create user: {}",
+                name
+            );
+        }
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/users")
+                    .body(axum::body::Body::empty())?,
+            )
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+        let users: Vec<CreateUserResponseBody> = serde_json::from_slice(&body)?;
+
+        for (expected_name, expected_email) in &users_to_create {
+            assert!(
+                users
+                    .iter()
+                    .any(|u| &u.name == expected_name && &u.email == expected_email),
+                "Expected user {} <{}> not found in response",
+                expected_name,
+                expected_email
+            );
+        }
+
+        Ok(())
     }
 
     #[tokio::test]
