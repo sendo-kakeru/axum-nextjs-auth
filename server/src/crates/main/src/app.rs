@@ -101,7 +101,7 @@ pub async fn run() -> Result<(), ()> {
 
     let app = router().with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
         .await
         .unwrap();
     println!("Listening on: {}", listener.local_addr().unwrap());

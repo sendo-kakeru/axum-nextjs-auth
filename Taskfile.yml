@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   # ------------------------
@@ -6,10 +6,22 @@ tasks:
   # ------------------------
 
   dev:
-    desc: Start the development server
+    desc: Start dev server
+    deps:
+      - task: dev:server
+      - task: dev:front
+
+  dev:server:
+    desc: Start backend dev server
     dir: server
     cmds:
       - cargo run --bin main
+
+  dev:front:
+    desc: Start frontend dev server
+    dir: front
+    cmds:
+      - npm run dev
 
   docker-rebuild:
     desc: Full Docker rebuild
@@ -76,8 +88,21 @@ tasks:
   # ------------------------
 
   test:
-    desc: Run tests on test DB
+    desc: Run tests
+    deps:
+      - task: test:server
+      - task: test:front
+
+  test:server:
+    desc: Run server tests
     deps: [reset-test-db]
     dir: server
     cmds:
       - cargo nextest run --workspace
+
+  test:front:
+    desc: Run front tests
+    dir: front
+    cmds:
+      - npm run type-check
+      - npm run test
