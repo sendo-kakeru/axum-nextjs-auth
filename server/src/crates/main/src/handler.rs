@@ -1,4 +1,7 @@
-use crate::app::AppState;
+use crate::{
+    app::AppState,
+    config::problem_type::{DUPLICATE, NOT_FOUND, VALIDATE},
+};
 use application::{
     request_response::{
         create_user_request::CreateUserRequestBody, create_user_response::CreateUserResponseBody,
@@ -24,7 +27,7 @@ pub(crate) async fn handle_create_user(
     if let Err(validation_errors) = body.validate() {
         let mut problem = problemdetails::new(StatusCode::BAD_REQUEST)
             .with_title("Validation Error")
-            .with_type("https://example.com/problems/validation")
+            .with_type(VALIDATE)
             .with_detail("One or more validation rules failed for the provided input")
             .with_instance("/users");
 
@@ -57,7 +60,7 @@ pub(crate) async fn handle_create_user(
             {
                 let problem = problemdetails::new(StatusCode::CONFLICT)
                     .with_title("Duplicate User Email")
-                    .with_type("https://example.com/problems/duplicate-email")
+                    .with_type(DUPLICATE)
                     .with_detail("This email address is already in use")
                     .with_instance("/users");
 
@@ -99,7 +102,7 @@ pub(crate) async fn handle_find_all_user(
 pub async fn handle_not_found(_req: http::Request<axum::body::Body>) -> impl IntoResponse {
     let problem = problemdetails::new(StatusCode::NOT_FOUND)
         .with_title("Not Found")
-        .with_type("https://example.com/problems/not-found")
+        .with_type(NOT_FOUND)
         .with_detail("The requested resource was not found.");
     problem
 }

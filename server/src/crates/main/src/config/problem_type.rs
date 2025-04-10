@@ -1,0 +1,12 @@
+pub const VALIDATE: &str = "https://example.com/problems/validate";
+pub const DUPLICATE: &str = "https://example.com/problems/duplicate";
+pub const NOT_FOUND: &str = "https://example.com/problems/not-found";
+pub const NO_CONTENT: &str = "https://example.com/problems/no-content";
+pub const INVALID_JSON: &str = "https://example.com/problems/invalid-json";
+pub const METHOD_NOT_ALLOWED: &str = "https://example.com/problems/method-not-allowed";
+pub const BAD_REQUEST: &str = "https://example.com/problems/bad-request";
+pub const UNSUPPORTED_MEDIA_TYPE: &str = "https://example.com/problems/unsupported-media-type";
+pub const CONFLICT: &str = "https://example.com/problems/conflict";
+pub const UNAUTHORIZED: &str = "https://example.com/problems/unauthorized";
+pub const FORBIDDEN: &str = "https://example.com/problems/forbidden";
+pub const INTERNAL_SERVER_ERROR: &str = "https://example.com/problems/internal-server-error";

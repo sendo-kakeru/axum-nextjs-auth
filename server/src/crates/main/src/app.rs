@@ -1,5 +1,11 @@
 use crate::{
-    config::connect,
+    config::{
+        connect,
+        problem_type::{
+            BAD_REQUEST, CONFLICT, FORBIDDEN, INTERNAL_SERVER_ERROR, INVALID_JSON,
+            METHOD_NOT_ALLOWED, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE,
+        },
+    },
     handler::{handle_create_user, handle_find_all_user, handle_not_found},
 };
 use axum::{
@@ -37,42 +43,42 @@ fn router() -> Router<AppState> {
                 match response.status() {
                     StatusCode::UNPROCESSABLE_ENTITY =>  problemdetails::new(StatusCode::UNPROCESSABLE_ENTITY)
                         .with_title("Invalid JSON")
-                        .with_type("https://example.com/problems/invalid-json")
+                        .with_type(INVALID_JSON)
                         .with_detail("Required fields are missing or invalid")
                         .with_instance("/users")
                         .into_response(),
                     StatusCode::METHOD_NOT_ALLOWED =>  problemdetails::new(StatusCode::METHOD_NOT_ALLOWED)
                         .with_title("Method Not Allowed")
-                        .with_type("https://example.com/problems/method-not-allowed")
+                        .with_type(METHOD_NOT_ALLOWED)
                         .into_response(),
                     StatusCode::BAD_REQUEST => problemdetails::new(StatusCode::BAD_REQUEST)
                         .with_title("Bad Request")
-                        .with_type("https://example.com/problems/bad-request")
+                        .with_type(BAD_REQUEST)
                         .with_detail("Malformed query or path parameter")
                         .into_response(),
                     StatusCode::UNSUPPORTED_MEDIA_TYPE =>  problemdetails::new(StatusCode::UNSUPPORTED_MEDIA_TYPE)
                         .with_title("Unsupported Media Type")
-                        .with_type("https://example.com/problems/unsupported-media-type")
+                        .with_type(UNSUPPORTED_MEDIA_TYPE)
                         .with_detail("Content-Type must be application/json")
                         .into_response(),
                     StatusCode::CONFLICT => problemdetails::new(StatusCode::CONFLICT)
                         .with_title("Conflict")
-                        .with_type("https://example.com/problems/conflict")
+                        .with_type(CONFLICT)
                         .with_detail("The request could not be completed due to a conflict with the current state of the resource.")
                         .into_response(),
                     StatusCode::UNAUTHORIZED => problemdetails::new(StatusCode::UNAUTHORIZED)
                         .with_title("Unauthorized")
-                        .with_type("https://example.com/problems/unauthorized")
+                        .with_type(UNAUTHORIZED)
                         .with_detail("Authentication is required to access this resource")
                         .into_response(),
                     StatusCode::FORBIDDEN => problemdetails::new(StatusCode::FORBIDDEN)
                         .with_title("Forbidden")
-                        .with_type("https://example.com/problems/forbidden")
+                        .with_type(FORBIDDEN)
                         .with_detail("You don't have permission to access this resource")
                         .into_response(),
                     status if !status.is_success() => problemdetails::new(status)
                         .with_title("Internal Server Error")
-                        .with_type("https://example.com/problems/internal-server-error")
+                        .with_type(INTERNAL_SERVER_ERROR)
                         .with_detail("An unexpected error occurred")
                         .into_response(),
                     _ => response,
@@ -117,6 +123,8 @@ mod tests {
     use axum::http::{StatusCode, header::CONTENT_TYPE};
     use domain::entity::user::User;
     use tower::ServiceExt;
+
+    use crate::config::problem_type::{DUPLICATE, VALIDATE};
 
     use super::*;
 
@@ -279,7 +287,7 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(problem["title"], "Invalid JSON");
-        assert_eq!(problem["type"], "https://example.com/problems/invalid-json");
+        assert_eq!(problem["type"], INVALID_JSON);
     }
 
     #[tokio::test]
@@ -310,10 +318,7 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(problem["title"], "Method Not Allowed");
-        assert_eq!(
-            problem["type"],
-            "https://example.com/problems/method-not-allowed"
-        );
+        assert_eq!(problem["type"], METHOD_NOT_ALLOWED);
     }
 
     #[tokio::test]
@@ -345,7 +350,7 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body)?;
 
         assert_eq!(problem["title"], "Validation Error");
-        assert_eq!(problem["type"], "https://example.com/problems/validation");
+        assert_eq!(problem["type"], VALIDATE);
 
         Ok(())
     }
@@ -396,10 +401,7 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body)?;
 
         assert_eq!(problem["title"], "Duplicate User Email");
-        assert_eq!(
-            problem["type"],
-            "https://example.com/problems/duplicate-email"
-        );
+        assert_eq!(problem["type"], DUPLICATE);
 
         Ok(())
     }
@@ -432,9 +434,6 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(problem["title"], "Unsupported Media Type");
-        assert_eq!(
-            problem["type"],
-            "https://example.com/problems/unsupported-media-type"
-        );
+        assert_eq!(problem["type"], UNSUPPORTED_MEDIA_TYPE);
     }
 }
