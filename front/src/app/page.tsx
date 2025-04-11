@@ -1,7 +1,7 @@
 import { env } from "@/env";
 import { Data } from "@/error";
 import { User } from "@/types/user";
-import { Heading, Spinner, Text } from "@radix-ui/themes";
+import { Card, Heading, Spinner, Text } from "@radix-ui/themes";
 import { Suspense } from "react";
 
 async function getUsers(): Promise<Data<User[]>> {
@@ -40,26 +40,32 @@ export default async function Home() {
 }
 
 async function UserList() {
-  const result = await getUsers();
+  const data = await getUsers();
 
-  if (result.status === "error") {
-    return <Text color="red">{result.message}</Text>;
+  if (data.status === "error") {
+    return <Text color="red">{data.message}</Text>;
   }
 
-  if (result.data.length === 0) {
+  if (data.data.length === 0) {
     return <Text>ユーザーが見つかりませんでした。</Text>;
   }
 
   return (
     <div className="grid gap-4">
-      {result.data.map((user) => (
-        <div
-          key={user.id}
-          className="border border-gray-300 p-4 rounded-lg shadow-sm"
-        >
-          <Text>{user.name}</Text>
-          <Text>{user.email}</Text>
-        </div>
+      {data.data.map((user) => (
+        <Card asChild key={user.id}>
+          <a
+            href={`/users/${user.id}`}
+            aria-label={`${user.name}のプロフィールへ`}
+          >
+            <Text as="p" size="2" weight="bold">
+              {user.name}
+            </Text>
+            <Text as="p" color="gray" size="2">
+              {user.email}
+            </Text>
+          </a>
+        </Card>
       ))}
     </div>
   );
