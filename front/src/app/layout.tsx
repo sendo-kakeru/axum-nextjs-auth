@@ -29,7 +29,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Theme>{children}</Theme>
+        <Theme>
+          <div className="grid gap-y-12 px-4 max-w-6xl mx-auto py-8 lg:py-16 h-full">
+            {children}
+          </div>
+        </Theme>
       </body>
     </html>
   );
