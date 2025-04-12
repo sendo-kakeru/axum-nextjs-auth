@@ -23,7 +23,7 @@ mod tests {
     use domain::entity::value_object::user_id::UserId;
 
     #[test]
-    fn test_from_create_user_output() {
+    fn test_create_user_output() {
         let id = UserId::new();
         let output = CreateUserOutput {
             id: id.clone(),

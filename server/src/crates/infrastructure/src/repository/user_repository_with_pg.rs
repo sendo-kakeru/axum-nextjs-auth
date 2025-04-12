@@ -1,5 +1,6 @@
 use crate::model::user_model::UserModel;
 use domain::entity::user::User;
+use domain::entity::value_object::user_id::UserId;
 use domain::interface::user_repository_interface::UserRepositoryInterface;
 
 #[derive(Debug, Clone)]
@@ -61,6 +62,28 @@ impl UserRepositoryInterface for UserRepositoryWithPg {
                 eprintln!("Failed to convert UserModel to User: {:?}", e);
                 anyhow::Error::msg("Data conversion failed")
             })
+    }
+
+    async fn find_by_id(&self, user_id: &UserId) -> Result<User, anyhow::Error> {
+        let row = sqlx::query_as!(
+            UserModel,
+            r#"
+            SELECT id, name, email FROM "user" WHERE id = $1
+            "#,
+            user_id.0
+        )
+        .fetch_one(&self.db)
+        .await
+        .map_err(|e| {
+            if matches!(e, sqlx::Error::RowNotFound) {
+                anyhow::Error::new(e)
+            } else {
+                eprintln!("Failed to fetch user by ID: {:?}", e);
+                anyhow::Error::msg("Failed to fetch user by ID")
+            }
+        })?;
+
+        Ok(User::try_from(row)?)
     }
 }
 
@@ -132,5 +155,24 @@ mod tests {
             users.iter().any(|u| u.email == email2),
             "User 2 should exist"
         );
+    }
+
+    #[tokio::test]
+    async fn test_find_user_by_id_successfully() {
+        let email = format!("test+{}@example.com", uuid::Uuid::new_v4());
+        let pool = connect().await.expect("database should connect");
+        let user_repository = UserRepositoryWithPg::new(pool.clone());
+        let user = User::new("Test User".into(), email.into());
+        user_repository
+            .create(&user)
+            .await
+            .expect("should create user");
+        let find_user = user_repository
+            .find_by_id(&user.id)
+            .await
+            .expect("should find user by ID");
+        assert_eq!(find_user.name, user.name);
+        assert_eq!(find_user.email, user.email);
+        assert_eq!(find_user.id, user.id);
     }
 }

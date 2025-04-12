@@ -1,19 +1,22 @@
 use crate::{
     app::AppState,
-    config::problem_type::{DUPLICATE, NOT_FOUND, VALIDATE},
+    config::problem_type::{DUPLICATE, INTERNAL_SERVER_ERROR, NOT_FOUND, VALIDATE},
 };
 use application::{
     request_response::{
         create_user_request::CreateUserRequestBody, create_user_response::CreateUserResponseBody,
         find_all_user_response::FindAllUserResponseBody,
+        find_user_by_id_request::FindUserByIdRequestParam,
+        find_user_by_id_response::FindUserByIdResponseBody,
     },
     usecase::{
         create_user::{CreateUserInput, CreateUserUsecase},
         find_all_user::FindAllUserUsecase,
+        find_user_by_id::FindUserByIdUsecase,
     },
 };
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Path, State},
     http::{self, StatusCode},
     response::IntoResponse,
 };
@@ -68,6 +71,7 @@ pub(crate) async fn handle_create_user(
             } else {
                 let problem = problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
                     .with_title("Internal Server Error")
+                    .with_type(INTERNAL_SERVER_ERROR)
                     .with_instance("/users");
 
                 #[cfg(debug_assertions)]
@@ -97,6 +101,45 @@ pub(crate) async fn handle_find_all_user(
     let response_body = FindAllUserResponseBody::from(output);
 
     Ok((StatusCode::OK, Json(response_body)))
+}
+
+pub(crate) async fn handle_find_user_by_id(
+    State(state): State<AppState>,
+    Path(user_id): Path<FindUserByIdRequestParam>,
+) -> Result<impl IntoResponse, problemdetails::Problem> {
+    let usecase = FindUserByIdUsecase::new(state.user_repository);
+    let user_id = user_id.id;
+    let instance_uri = format!("/users/{}", user_id);
+
+    match usecase.execute(user_id.clone()).await {
+        Ok(user) => {
+            let response_body = FindUserByIdResponseBody::from(user);
+            Ok((StatusCode::OK, Json(response_body)))
+        }
+        Err(e) => {
+            if let Some(sqlx_error) = e.downcast_ref::<sqlx::Error>() {
+                if matches!(sqlx_error, sqlx::Error::RowNotFound) {
+                    let problem = problemdetails::new(StatusCode::NOT_FOUND)
+                        .with_title("User Not Found")
+                        .with_type(NOT_FOUND)
+                        .with_detail("The requested user was not found")
+                        .with_instance(instance_uri);
+
+                    return Err(problem);
+                }
+            }
+
+            let problem = problemdetails::new(StatusCode::INTERNAL_SERVER_ERROR)
+                .with_title("Internal Server Error")
+                .with_type(INTERNAL_SERVER_ERROR)
+                .with_instance(instance_uri);
+
+            #[cfg(debug_assertions)]
+            let problem = problem.with_detail(e.to_string());
+
+            Err(problem)
+        }
+    }
 }
 
 pub async fn handle_not_found(_req: http::Request<axum::body::Body>) -> impl IntoResponse {
