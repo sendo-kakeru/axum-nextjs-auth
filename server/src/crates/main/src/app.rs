@@ -124,7 +124,7 @@ mod tests {
     use axum::http::{StatusCode, header::CONTENT_TYPE};
     use domain::entity::user::User;
     use tower::ServiceExt;
-    use crate::config::problem_type::{DUPLICATE, VALIDATE};
+    use crate::config::problem_type::{DUPLICATE, NOT_FOUND, VALIDATE};
 
     use super::*;
 
@@ -544,7 +544,7 @@ mod tests {
         let problem: serde_json::Value = serde_json::from_slice(&body)?;
 
         assert_eq!(problem["title"], "User Not Found");
-        assert_eq!(problem["type"], crate::config::problem_type::NOT_FOUND);
+        assert_eq!(problem["type"], NOT_FOUND);
 
         Ok(())
     }
