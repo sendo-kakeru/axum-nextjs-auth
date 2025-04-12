@@ -3,23 +3,29 @@ import { Data } from "@/error";
 import { User as UserType } from "@/types/user";
 import { PageProps } from "@/types/utils";
 import { Heading, Text, Link, Spinner } from "@radix-ui/themes";
-import { notFound } from "next/navigation";
 import NextLink from "next/link";
 import { Suspense } from "react";
 
 async function getUser(id: string): Promise<Data<UserType>> {
   try {
-    const response = await fetch(`${env.API_URL}/users/${id}`);
-    const user: UserType | undefined = await response.json();
-
+    const response = await fetch(`${env.API_URL}/users/${id}`, {
+      next: {
+        revalidate: 60,
+      },
+    });
     if (response.status === 404) {
-      notFound();
-    }
-    if (!response.ok || !user) {
       return {
         status: "error",
-        message: "ユーザーの取得に失敗しました。",
+        message: "ユーザーが存在しません。",
       };
+    }
+    if (!response.ok) {
+      throw new Error();
+    }
+    const user: UserType | undefined = await response.json();
+
+    if (!user) {
+      throw new Error();
     }
     return {
       status: "success",

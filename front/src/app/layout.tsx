@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Theme>
-          <div className="grid gap-y-12 max-2 px-4 max-w-6xl mx-auto py-8 lg:py-16 h-full">
+          <div className="grid gap-y-12 px-4 max-w-6xl mx-auto py-8 lg:py-16 h-full">
             {children}
           </div>
         </Theme>

@@ -2,18 +2,25 @@ import { env } from "@/env";
 import { Data } from "@/error";
 import { User } from "@/types/user";
 import { Card, Heading, Spinner, Text } from "@radix-ui/themes";
+import Link from "next/link";
 import { Suspense } from "react";
 
 async function getUsers(): Promise<Data<User[]>> {
   try {
-    const response = await fetch(`${env.API_URL}/users`);
+    const response = await fetch(`${env.API_URL}/users`, {
+      next: {
+        revalidate: 60,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error();
+    }
+
     const users: User[] | undefined = await response.json();
 
-    if (!response.ok || !users) {
-      return {
-        status: "error",
-        message: "ユーザーの取得に失敗しました。",
-      };
+    if (!users) {
+      throw new Error();
     }
 
     return {
@@ -46,15 +53,16 @@ async function UserList() {
     return <Text color="red">{data.message}</Text>;
   }
 
-  if (data.data.length === 0) {
+  const { data: users } = data;
+  if (users.length === 0) {
     return <Text>ユーザーが見つかりませんでした。</Text>;
   }
 
   return (
     <div className="grid gap-4">
-      {data.data.map((user) => (
+      {users.map((user) => (
         <Card asChild key={user.id}>
-          <a
+          <Link
             href={`/users/${user.id}`}
             aria-label={`${user.name}のプロフィールへ`}
           >
@@ -64,7 +72,7 @@ async function UserList() {
             <Text as="p" color="gray" size="2">
               {user.email}
             </Text>
-          </a>
+          </Link>
         </Card>
       ))}
     </div>

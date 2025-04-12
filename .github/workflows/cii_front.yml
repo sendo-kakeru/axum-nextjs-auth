@@ -20,20 +20,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
-          cache-dependency-path: front/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+          cache: "npm"
+          cache-dependency-path: front/package-lock.json
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Run Lint
-        run: pnpm run lint
+        run: npm run lint
 
       - name: Run type check
-        run: pnpm run typecheck
+        run: npm run type-check
 
       - name: Run Tests
-        run: pnpm run test
+        run: npm run test
