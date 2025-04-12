@@ -85,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_request_body_to_input() {
+    fn test_request_body_to_input() {
         let req = CreateUserRequestBody {
             name: "Test User".to_string(),
             email: "test@example.com".to_string(),

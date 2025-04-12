@@ -17,7 +17,7 @@ where
         FindAllUserUsecase { user_repository }
     }
 
-    pub async fn execute(&self) -> anyhow::Result<FindAllUserOutput, anyhow::Error> {
+    pub async fn execute(&self) -> anyhow::Result<FindAllUserOutput> {
         let users = self.user_repository.find_all().await?;
         anyhow::Ok(FindAllUserOutput(users))
     }

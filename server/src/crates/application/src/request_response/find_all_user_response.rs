@@ -42,7 +42,7 @@ mod tests {
     use domain::entity::value_object::user_id::UserId;
 
     #[test]
-    fn test_from_find_all_user_output() {
+    fn test_find_all_user_output() {
         let user1 = User {
             id: UserId::new(),
             name: "Alice".to_string(),

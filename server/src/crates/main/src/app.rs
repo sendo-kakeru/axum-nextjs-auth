@@ -6,7 +6,7 @@ use crate::{
             METHOD_NOT_ALLOWED, UNAUTHORIZED, UNSUPPORTED_MEDIA_TYPE,
         },
     },
-    handler::{handle_create_user, handle_find_all_user, handle_not_found},
+    handler::{handle_create_user, handle_find_all_user, handle_find_user_by_id, handle_not_found},
 };
 use axum::{
     Router,
@@ -30,6 +30,7 @@ fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { "Home" }))
         .route("/users", get(handle_find_all_user).post(handle_create_user))
+        .route("/users/{id}", get(handle_find_user_by_id))
         .layer(ServiceBuilder::new().layer(axum::middleware::map_response(
             |response: Response| async move {
                 if let Some(content_type) = response.headers().get(axum::http::header::CONTENT_TYPE)
@@ -123,7 +124,6 @@ mod tests {
     use axum::http::{StatusCode, header::CONTENT_TYPE};
     use domain::entity::user::User;
     use tower::ServiceExt;
-
     use crate::config::problem_type::{DUPLICATE, VALIDATE};
 
     use super::*;
@@ -176,8 +176,6 @@ mod tests {
         assert_eq!(response_body.email, email.clone());
         assert!(!response_body.id.is_empty());
         Ok(())
-
-        // @todo 取得ができたら検証テスト追加
     }
 
     #[tokio::test]
@@ -255,6 +253,58 @@ mod tests {
                 expected_email
             );
         }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_find_user_by_id() -> anyhow::Result<()> {
+        let pool = connect().await.expect("database should connect");
+        let state = AppState {
+            user_repository: UserRepositoryWithPg::new(pool.clone()),
+            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
+        };
+
+        let app = router().with_state(state);
+
+        let name = "Test User";
+        let email = format!("test+{}@example.com", uuid::Uuid::new_v4());
+        let request_body = CreateUserRequestBody {
+            name: name.to_string(),
+            email: email.clone(),
+        };
+
+        let response = app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/users")
+                    .header(CONTENT_TYPE, "application/json")
+                    .body(axum::body::Body::new(serde_json::to_string(&request_body)?))?,
+            )
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+        let created_user: CreateUserResponseBody = serde_json::from_slice(&body)?;
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri(&format!("/users/{}", created_user.id))
+                    .body(axum::body::Body::empty())?,
+            )
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+        let fetched_user: CreateUserResponseBody = serde_json::from_slice(&body)?;
+
+        assert_eq!(fetched_user.id, created_user.id);
+        assert_eq!(fetched_user.name, name);
+        assert_eq!(fetched_user.email, email);
 
         Ok(())
     }
@@ -435,5 +485,67 @@ mod tests {
 
         assert_eq!(problem["title"], "Unsupported Media Type");
         assert_eq!(problem["type"], UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    #[tokio::test]
+    async fn test_find_user_by_id_400() -> anyhow::Result<()> {
+        let pool = connect().await.expect("database should connect");
+        let state = AppState {
+            user_repository: UserRepositoryWithPg::new(pool.clone()),
+            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
+        };
+
+        let app = router().with_state(state);
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/users/not-a-uuid")
+                    .body(axum::body::Body::empty())?,
+            )
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+        let problem: serde_json::Value = serde_json::from_slice(&body)?;
+
+        assert_eq!(problem["title"], "Bad Request");
+        assert_eq!(problem["type"], BAD_REQUEST);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_find_user_by_id_404() -> anyhow::Result<()> {
+        let pool = connect().await.expect("database should connect");
+        let state = AppState {
+            user_repository: UserRepositoryWithPg::new(pool.clone()),
+            user_email_duplicate_validator: UserEmailDuplicateValidatorWithPg::new(pool.clone()),
+        };
+
+        let app = router().with_state(state);
+
+        let non_existing_id = uuid::Uuid::new_v4();
+
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri(&format!("/users/{}", non_existing_id))
+                    .body(axum::body::Body::empty())?,
+            )
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await?;
+        let problem: serde_json::Value = serde_json::from_slice(&body)?;
+
+        assert_eq!(problem["title"], "User Not Found");
+        assert_eq!(problem["type"], crate::config::problem_type::NOT_FOUND);
+
+        Ok(())
     }
 }
